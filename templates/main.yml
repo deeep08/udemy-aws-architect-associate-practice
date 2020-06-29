@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  WebsiteBucketName:
+    Type: String
+    Description: 'The S3 bucket for CodePipeline artifacts.'
+
+Resources:
+  LambdaRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            Service:
+              - "lambda.amazonaws.com"
+          Action: sts:AssumeRole
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+
+  HelloLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt LambdaRole.Arn
+      Code:
+        ZipFile: |
+          def handler(event, context):
+              print("In lambda handler")
+
+              resp = {
+                  "statusCode": 200,
+                  "headers": {
+                      "Access-Control-Allow-Origin": "*",
+                  },
+                  "body": "This is the response from lambda function"
+              }
+
+              return resp
+      Description: Sample lambda function
+      Runtime: python3.6
+      Timeout: 5
+      Tags:
+        - Key: StackName
+          Value: !Ref AWS::StackName
+
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: Lambda Proxy
+      Description: Lambda proxy using quick create
+      ProtocolType: HTTP
+      Target: !GetAtt HelloLambdaFunction.Arn
+
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      BucketName: !Ref WebsiteBucketName
+      MetricsConfigurations:
+        - Id: EntireBucket
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      Tags:
+        - Key: StackName
+          Value: !Ref AWS::StackName
+    DeletionPolicy: Delete
+
+Outputs:
+  WebsiteEndpoint:
+    Description: The DNS name for the website bucket
+    Value: !GetAtt WebsiteBucket.WebsiteURL
+    Export:
+      Name: WebsiteEndpoint
