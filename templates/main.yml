@@ -86,7 +86,7 @@ Outputs:
       Name: BucketEndpoint
   WebsiteEndpoint:
     Description: The DNS name for the website
-    Value: !Sub "https://${DNS}"
+    Value: !Sub "http://${DNS}"
     Export:
       Name: WebsiteEndpoint
   ApiGatewayID:
