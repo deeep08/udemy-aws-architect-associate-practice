@@ -1,59 +1,67 @@
 AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
 
 Parameters:
   WebsiteBucketName:
     Type: String
     Description: 'The S3 bucket for CodePipeline artifacts.'
+  ApiStageName:
+    Type: String
+    Description: 'The stage name for the API gateway.'
+  Domain:
+    Type: String
+    Description: 'The registered domain name.'
+  SubDomain:
+    Type: String
+    Description: 'The sub-domain name for the website.'
+  WebsiteBucketDNSName:
+    Type: String
+    Description: 'The registered domain name.'
+  WebsiteBucketHostedZoneId:
+    Type: String
+    Description: 'The sub-domain name for the website.'
 
 Resources:
-  LambdaRole:
-    Type: "AWS::IAM::Role"
+  DNS:
+    Type: AWS::Route53::RecordSet
     Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          Effect: Allow
-          Principal:
-            Service:
-              - "lambda.amazonaws.com"
-          Action: sts:AssumeRole
-      Tags:
-        - Key: Name
-          Value: !Ref AWS::StackName
+      HostedZoneName: !Sub '${Domain}.'
+      Name: !Sub '${SubDomain}.${Domain}.'
+      Type: A
+      AliasTarget:
+        HostedZoneId: !Ref WebsiteBucketHostedZoneId
+        DNSName: !Ref WebsiteBucketDNSName
 
-  HelloLambdaFunction:
-    Type: AWS::Lambda::Function
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
     Properties:
-      Handler: index.handler
-      Role: !GetAtt LambdaRole.Arn
-      Code:
-        ZipFile: |
-          def handler(event, context):
-              print("In lambda handler")
+      StageName: !Ref ApiStageName
 
-              resp = {
-                  "statusCode": 200,
-                  "headers": {
-                      "Access-Control-Allow-Origin": "*",
-                  },
-                  "body": "This is the response from lambda function"
-              }
-
-              return resp
-      Description: Sample lambda function
+  ApiFunction: # Adds a GET API endpoint at "/" to the ApiGatewayApi via an API event
+    Type: AWS::Serverless::Function
+    Properties:
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /
+            Method: get
+            RestApiId: !Ref ApiGatewayApi
       Runtime: python3.6
-      Timeout: 5
-      Tags:
-        - Key: StackName
-          Value: !Ref AWS::StackName
+      Handler: index.handler
+      InlineCode: |
+        def handler(event, context):
+                      print("In lambda handler")
 
-  HttpApi:
-    Type: AWS::ApiGatewayV2::Api
-    Properties:
-      Name: Lambda Proxy
-      Description: Lambda proxy using quick create
-      ProtocolType: HTTP
-      Target: !GetAtt HelloLambdaFunction.Arn
+                      resp = {
+                          "statusCode": 200,
+                          "headers": {
+                              "Access-Control-Allow-Origin": "*",
+                          },
+                          "body": "This is the response from lambda function"
+                      }
+
+                      return resp
 
   WebsiteBucket:
     Type: AWS::S3::Bucket
@@ -71,8 +79,18 @@ Resources:
     DeletionPolicy: Delete
 
 Outputs:
-  WebsiteEndpoint:
-    Description: The DNS name for the website bucket
+  BucketEndpoint:
+    Description: The DNS name for the bucket
     Value: !GetAtt WebsiteBucket.WebsiteURL
     Export:
+      Name: BucketEndpoint
+  WebsiteEndpoint:
+    Description: The DNS name for the website
+    Value: !Sub "https://${DNS}"
+    Export:
       Name: WebsiteEndpoint
+  ApiGatewayID:
+    Description: The root resource ID for the API Gateway
+    Value: !Ref ApiGatewayApi
+    Export:
+      Name: ApiGatewayID
