@@ -20,7 +20,6 @@ Steps:-
     * CLI_PROFILE - Name of the AWS Cli profile created in Prerequisites
     * API_STAGE_NAME - Name of the stage for API Gateway to be deployed
     * DOMAIN - Your registered domain name
-    * SUBDOMAIN
     * BUCKET_DNS_NAME
     * BUCKET_HOSTED_ZONE_ID 
     
@@ -33,3 +32,18 @@ Steps:-
     ./deploy-infra.sh
     ```
 4. The output of the script displays the URL of the Endpoint to access the created website.
+
+Remove the stack from AWS
+=====================
+Steps:-
+1. Go to scripts folder
+2. Change the below parameters inside ```remove-infra.sh``` as required
+    * STACK_NAME - Name of the stack inside cloud formation
+    * REGION - AWS Region you want stack and its resources to be deployed
+    * CLI_PROFILE - Name of the AWS Cli profile created in Prerequisites
+    * DOMAIN - Your registered domain name
+3. Run the below command to remove the cloud formation stack from AWS 
+    ```
+    ./remove-infra.sh
+    ```
+4. The script first empties the S3 bucket and then deletes all the AWS resources created by this cloud formation stack.
