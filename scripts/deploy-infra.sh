@@ -11,6 +11,11 @@ DOMAIN=deeep08.com
 SUBDOMAIN=$STACK_NAME
 
 WEBSITE_BUCKET="$SUBDOMAIN.$DOMAIN"
+
+# For value of BUCKET_DNS_NAME and BUCKET_HOSTED_ZONE_ID,
+# refer to Website Endpoint and Route 53 Hosted Zone ID  respectively
+# for the REGION value you specified in the link
+# https://docs.aws.amazon.com/general/latest/gr/s3.html#s3_website_region_endpoints
 BUCKET_DNS_NAME="s3-website-us-east-1.amazonaws.com"
 BUCKET_HOSTED_ZONE_ID="Z3AQBSTGFYJSTF"
 
